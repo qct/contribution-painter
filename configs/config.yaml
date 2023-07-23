@@ -1,0 +1,14 @@
+repo_url: https://github.com/your-repo.git
+gh_token: your_github_token
+author: author
+email: author_mail
+
+background_commits_per_day: 3
+foreground_commits_per_day: 5
+start_week: 2
+target_letters: "L"
+
+squash:
+  target_branch: "master"
+  start_commit: "4f41c951"
+  end_commit: ""
