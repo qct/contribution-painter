@@ -10,6 +10,7 @@ import (
 
 var config configs.Config
 
+// Deprecated: This is a deprecated function.
 func main() {
 	logger.InitLogger()
 	err := configs.LoadConfig("", &config)
