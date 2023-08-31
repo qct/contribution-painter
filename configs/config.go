@@ -10,7 +10,7 @@ type Config struct {
 
 	BackgroundCommitsPerDay int    `mapstructure:"background_commits_per_day"`
 	ForegroundCommitsPerDay int    `mapstructure:"foreground_commits_per_day"`
-	StartWeek               int    `mapstructure:"start_week"`
+	WeekOffset              int    `mapstructure:"week_offset"`
 	TargetLetters           string `mapstructure:"target_letters"`
 
 	Squash SquashConfig `mapstructure:"squash"`

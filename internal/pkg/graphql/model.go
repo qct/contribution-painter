@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type DailyCommit struct {
+type CommitStats struct {
 	Date    time.Time
 	Commits int
 }

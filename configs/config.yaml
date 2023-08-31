@@ -5,7 +5,7 @@ email: author_mail
 
 background_commits_per_day: 3
 foreground_commits_per_day: 5
-start_week: 2
+week_offset: 0
 target_letters: "L"
 
 squash:

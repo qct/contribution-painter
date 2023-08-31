@@ -1,31 +1,27 @@
 package graphql
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
 	"rewriting-history/configs"
 	"rewriting-history/internal/pkg/helper"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
 type GhGraphql struct {
-	user    string
-	ghToken string
+	User string
+	C    *GraphClient
 }
 
 func NewGhGraphql(config *configs.Config) *GhGraphql {
 	return &GhGraphql{
-		user:    config.Author,
-		ghToken: config.GhToken,
+		User: config.Author,
+		C:    NewClient(helper.GitHubGraphQLEndpoint, config.GhToken, 10*time.Second),
 	}
 }
 
-func (g *GhGraphql) CommitsByDay() ([]DailyCommit, error) {
+func (g *GhGraphql) CommitsByDay() ([]CommitStats, error) {
 	query := fmt.Sprintf(`
 	{
 		user(login: "%s") {
@@ -42,49 +38,19 @@ func (g *GhGraphql) CommitsByDay() ([]DailyCommit, error) {
 				}
 			}
 		}
-	}`, g.user)
+	}`, g.User)
 
-	// Create the GraphQL request payload
-	reqJSON, err := json.Marshal(graphqlRequest{
-		Query: query,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	client := &http.Client{}
-	// Create the HTTP POST request to the GraphQL API
-	req, err := http.NewRequest("POST", helper.GitHubGraphQLEndpoint, strings.NewReader(string(reqJSON)))
-	if err != nil {
-		log.Fatal("Failed to create HTTP request:", err)
-	}
-	// Set the necessary headers, including the access token
-	req.Header.Set("Authorization", "Bearer "+g.ghToken)
-	req.Header.Set("Content-Type", helper.ContentTypeJSON)
-	req.Header.Set("Accept", helper.ContentTypeJSON)
-
-	// Send the HTTP request
-	resp, err := client.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		logrus.Warnf("failed to get response: status code %d, status %s", resp.StatusCode, resp.Status)
-	}
+	var graphResp graphqlResponse
+	err := g.C.GraphQLRequest(query, &graphResp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get response: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Parse the GraphQL response
-	var graphResp graphqlResponse
-	err = json.NewDecoder(resp.Body).Decode(&graphResp)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	// Process the response to retrieve the commit count per day
 	contributionDays := graphResp.Data.User.ContributionsCollection.ContributionCalendar.Weeks
 
-	// Create an array of DailyCommit structs
-	var dailyCommits []DailyCommit
+	// Create an array of CommitStats structs
+	var dailyCommits []CommitStats
 
 	for _, week := range contributionDays {
 		for _, day := range week.ContributionDays {
@@ -94,7 +60,7 @@ func (g *GhGraphql) CommitsByDay() ([]DailyCommit, error) {
 				continue
 			}
 
-			count := DailyCommit{
+			count := CommitStats{
 				Date:    date,
 				Commits: day.ContributionCount,
 			}
@@ -105,8 +71,8 @@ func (g *GhGraphql) CommitsByDay() ([]DailyCommit, error) {
 	return dailyCommits, nil
 }
 
-func MaxCommits(from, to time.Time, dailyCommits []DailyCommit) (*DailyCommit, error) {
-	var max *DailyCommit
+func MaxCommits(from, to time.Time, dailyCommits []CommitStats) (*CommitStats, error) {
+	var max *CommitStats
 
 	for _, dc := range dailyCommits {
 		if (dc.Date.After(from) || dc.Date.Equal(from)) && (dc.Date.Before(to) || dc.Date.Equal(to)) {
