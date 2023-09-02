@@ -3,7 +3,6 @@ package graphql
 import (
 	"net/http"
 	"net/http/httptest"
-	"rewriting-history/configs"
 	"testing"
 	"time"
 
@@ -132,13 +131,4 @@ func TestMaxCommits(t *testing.T) {
 			assert.Equalf(t, tt.want, got, "MaxCommits(%v, %v, %v)", tt.args.from, tt.args.to, tt.args.dailyCommits)
 		})
 	}
-}
-
-func loadConfig(t *testing.T) configs.Config {
-	var cfg configs.Config
-	err := configs.LoadConfig("../../../configs/config.yaml", &cfg)
-	if err != nil {
-		t.Fatalf("Load config failed: %v", err)
-	}
-	return cfg
 }

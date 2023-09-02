@@ -2,7 +2,7 @@ package main
 
 import (
 	"rewriting-history/configs"
-	"rewriting-history/internal/app/rewriter"
+	"rewriting-history/internal/app/stat"
 	"rewriting-history/internal/pkg/logger"
 
 	"github.com/sirupsen/logrus"
@@ -17,7 +17,7 @@ func main() {
 		logrus.Fatalf("Load config failed: %v", err)
 	}
 
-	re := rewriter.NewRewriter(&config)
+	re := stat.NewStat(&config)
 	err = re.Run()
 	if err != nil {
 		logrus.Fatalf("Rewriter failed to run: %v", err)
