@@ -22,32 +22,13 @@ func NewGhGraphql(config *configs.Config) *GhGraphql {
 }
 
 func (g *GhGraphql) CommitsByDay() ([]CommitStats, error) {
-	query := fmt.Sprintf(`
-	{
-		user(login: "%s") {
-			contributionsCollection {
-				contributionCalendar {
-					totalContributions
-					weeks {
-						contributionDays {
-							date
-							contributionCount
-							color
-						}
-					}
-				}
-			}
-		}
-	}`, g.User)
-
-	var graphResp graphqlResponse
-	err := g.C.GraphQLRequest(query, &graphResp)
+	resp, err := g.GetContributionCollection()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get response: %w", err)
+		return nil, fmt.Errorf("failed to get contribution collection: %w", err)
 	}
 
 	// Process the response to retrieve the commit count per day
-	contributionDays := graphResp.Data.User.ContributionsCollection.ContributionCalendar.Weeks
+	contributionDays := resp.Data.User.ContributionsCollection.ContributionCalendar.Weeks
 
 	// Create an array of CommitStats structs
 	var dailyCommits []CommitStats
@@ -69,6 +50,33 @@ func (g *GhGraphql) CommitsByDay() ([]CommitStats, error) {
 	}
 
 	return dailyCommits, nil
+}
+
+func (g *GhGraphql) GetContributionCollection() (ContributionsCollectionResp, error) {
+	query := fmt.Sprintf(`
+	{
+		user(login: "%s") {
+			contributionsCollection {
+				contributionCalendar {
+					totalContributions
+					weeks {
+						contributionDays {
+							date
+							contributionCount
+							color
+						}
+					}
+				}
+			}
+		}
+	}`, g.User)
+
+	var resp ContributionsCollectionResp
+	err := g.C.GraphQLRequest(query, &resp)
+	if err != nil {
+		return ContributionsCollectionResp{}, err
+	}
+	return resp, nil
 }
 
 func MaxCommits(from, to time.Time, dailyCommits []CommitStats) (*CommitStats, error) {

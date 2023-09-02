@@ -13,21 +13,23 @@ type graphqlRequest struct {
 	Query string `json:"query"`
 }
 
-type graphqlResponse struct {
+type ContributionsCollectionResp struct {
 	Data struct {
 		User struct {
 			ContributionsCollection struct {
 				ContributionCalendar struct {
 					TotalContributions int `json:"totalContributions"`
 					Weeks              []struct {
-						ContributionDays []struct {
-							Date              string `json:"date"`
-							ContributionCount int    `json:"contributionCount"`
-							Color             string `json:"color"`
-						} `json:"contributionDays"`
+						ContributionDays []ContributionDay `json:"contributionDays"`
 					} `json:"weeks"`
 				} `json:"contributionCalendar"`
 			} `json:"contributionsCollection"`
 		} `json:"user"`
 	} `json:"data"`
+}
+
+type ContributionDay struct {
+	Date              string `json:"date"`
+	ContributionCount int    `json:"contributionCount"`
+	Color             string `json:"color"`
 }
