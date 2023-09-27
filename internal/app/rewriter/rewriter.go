@@ -9,15 +9,12 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
-	. "github.com/go-git/go-git/v5/_examples"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/sirupsen/logrus"
 )
 
 const (
 	minWidth = 3
-	appender = "appender.txt"
 )
 
 type Rewriter struct {
@@ -56,23 +53,25 @@ func (r *Rewriter) Run() error {
 		return fmt.Errorf("sanity check failed: %w", err)
 	}
 
+	err = r.printCommitStat()
+	if err != nil {
+		return fmt.Errorf("print commit stat failed: %w", err)
+	}
+
 	err = r.prepare()
 	if err != nil {
 		return fmt.Errorf("prepare repo failed: %w", err)
 	}
-	logrus.Infof("prepare repo success")
 
 	err = r.drawBackground()
 	if err != nil {
 		return fmt.Errorf("draw backgroud failed: %w", err)
 	}
-	logrus.Infof("draw backgroud success")
 
 	err = r.drawForeground()
 	if err != nil {
 		return fmt.Errorf("draw foreground failed: %w", err)
 	}
-	logrus.Infof("draw foreground success")
 
 	if !r.rewriterCfg.DryRun {
 		err = repo.ForcePush(r.repo, r.gitCfg.GhToken)
@@ -83,20 +82,6 @@ func (r *Rewriter) Run() error {
 	}
 
 	return nil
-}
-
-func (r *Rewriter) GenerateCommit() plumbing.Hash {
-	w, err := r.repo.Worktree()
-	CheckIfError(err)
-
-	// git add $appender
-	_, err = w.Add(appender)
-	CheckIfError(err)
-
-	// git commit -m $message
-	h, err := w.Commit("New content", &git.CommitOptions{})
-	CheckIfError(err)
-	return h
 }
 
 func (r *Rewriter) sanityCheck() error {
