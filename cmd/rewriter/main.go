@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var config configs.Config
+var config configs.Configuration
 
 func main() {
 	logger.InitLogger()
@@ -17,7 +17,7 @@ func main() {
 		logrus.Fatalf("Load config failed: %v", err)
 	}
 
-	re := rewriter.NewRewriter(&config)
+	re := rewriter.NewRewriter(config)
 	err = re.Run()
 	if err != nil {
 		logrus.Fatalf("Rewriter failed to run: %v", err)

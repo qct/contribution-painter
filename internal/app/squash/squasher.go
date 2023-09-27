@@ -14,12 +14,12 @@ import (
 )
 
 type Squasher struct {
-	config *configs.Config
+	config *configs.Configuration
 	repo   *git.Repository
 }
 
-func NewSquasher(cfg *configs.Config) *Squasher {
-	r, err := repo.CloneRepo(cfg.RepoUrl, cfg.GhToken)
+func NewSquasher(cfg *configs.Configuration) *Squasher {
+	r, err := repo.CloneRepo(cfg.GitInfo.RepoUrl, cfg.GitInfo.GhToken)
 	if err != nil {
 		logrus.Fatalf("Clone repo failed: %v", err)
 	}
@@ -111,7 +111,7 @@ func (s *Squasher) findTargetCommit(commits []*object.Commit) (start, end *objec
 
 func (s *Squasher) pushChanges() error {
 	// Force push the updated history
-	err := repo.ForcePush(s.repo, s.config.GhToken)
+	err := repo.ForcePush(s.repo, s.config.GitInfo.GhToken)
 	if err != nil {
 		return fmt.Errorf("failed to force push: %w", err)
 	}
