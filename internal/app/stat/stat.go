@@ -17,6 +17,8 @@ func NewStat(c *configs.Config) *Stat {
 }
 
 func (s *Stat) Run() error {
+	logrus.Info("color 1 --> 4, light to dark")
+
 	resp, err := s.ghGraphql.GetContributionCollection()
 	if err != nil {
 		return err
@@ -34,8 +36,7 @@ func (s *Stat) Run() error {
 		stats = append(stats, contributionStat{color: color, contributionDays: days})
 	}
 
-	// Sort the stats
-	sort.Sort(stats)
+	sort.Sort(sort.Reverse(stats))
 	for _, stat := range stats {
 		// min, max, mean, median
 		min := contributionDays(stat.contributionDays).min()
@@ -44,7 +45,7 @@ func (s *Stat) Run() error {
 		median := contributionDays(stat.contributionDays).median()
 
 		// Print the stats
-		logrus.Infof("%s(%s), count: %d, {%d, %d}, mean: %d, median: %d",
+		logrus.Infof("color%s(%s), total commits: %4d, [%d, %d], mean: %d, median: %d",
 			colorToHuman[stat.color], stat.color, len(stat.contributionDays), min, max, mean, median)
 	}
 	return nil
