@@ -17,16 +17,9 @@ type Rewriter struct {
 	TargetLetters           string `mapstructure:"target_letters"`
 }
 
-type SquashConfig struct {
-	TargetBranch string `mapstructure:"target_branch"`
-	StartCommit  string `mapstructure:"start_commit"`
-	EndCommit    string `mapstructure:"end_commit"`
-}
-
 type Configuration struct {
-	GitInfo  GitInfo      `mapstructure:"git_info"`
-	Rewriter Rewriter     `mapstructure:"rewriter"`
-	Squash   SquashConfig `mapstructure:"squash"`
+	GitInfo  GitInfo  `mapstructure:"git_info"`
+	Rewriter Rewriter `mapstructure:"rewriter"`
 }
 
 func LoadConfig(file string, cfg *Configuration) error {
