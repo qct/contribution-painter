@@ -10,9 +10,3 @@ rewriter:
   foreground_commits_per_day: 5
   week_offset: 0
   target_letters: "HELLO"
-
-# deprecated
-squash:
-  target_branch: "master"
-  start_commit: "4f41c951"
-  end_commit: ""
