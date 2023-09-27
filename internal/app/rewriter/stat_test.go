@@ -1,4 +1,4 @@
-package stat
+package rewriter
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestColorStats(t *testing.T) {
+func TestRewriter_printCommitStat(t *testing.T) {
 	resp := &graphql.ContributionsCollectionResp{}
 	err := jsonModelFromFilePath("mocks/contributions_collection_resp.json", resp)
 	assert.NoError(t, err)
@@ -38,8 +38,7 @@ func TestColorStats(t *testing.T) {
 		median := contributionDays(stat.contributionDays).median()
 
 		// Print the stats
-		t.Logf("%s(%s), count: %d, {%d, %d}, mean: %d, median: %d",
-			colorToHuman[stat.color], stat.color, len(stat.contributionDays), min, max, mean, median)
+		t.Logf(printFormat, colorToHuman[stat.color], stat.color, len(stat.contributionDays), min, max, mean, median)
 	}
 }
 
