@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"rewriting-history/configs"
 	"rewriting-history/internal/pkg/graphql"
+	"rewriting-history/internal/pkg/helper"
 	"rewriting-history/internal/pkg/repo"
 	"time"
 
@@ -20,7 +21,9 @@ const (
 )
 
 type Rewriter struct {
-	config    *configs.Config
+	rewriterCfg configs.Rewriter
+	gitCfg      configs.GitInfo
+
 	repo      *git.Repository
 	startDate time.Time
 	endDate   time.Time
@@ -28,21 +31,22 @@ type Rewriter struct {
 	ghGraphql *graphql.GhGraphql
 }
 
-func NewRewriter(cfg *configs.Config) *Rewriter {
-	ghGraphql := graphql.NewGhGraphql(cfg)
+func NewRewriter(cfg configs.Configuration) *Rewriter {
+	ghGraphql := graphql.NewGhGraphql(cfg.GitInfo)
 
-	startDate, err := getSunday(time.Now(), cfg.WeekOffset)
+	startDate, err := getStartSunday(time.Now(), cfg.Rewriter.WeekOffset)
 	if err != nil {
 		logrus.Fatalf("Get first Saturday failed: %v", err)
 	}
-	endDate := latestSunday(nil)
-	logrus.Infof("startDate: %v, endDate: %v", startDate, endDate)
+	endDate := getLatestSunday(time.Now()).Add(-24 * time.Hour)
+	logrus.Infof("painting date range: %s --- %s", startDate.Format(helper.DateFormat), endDate.Format(helper.DateFormat))
 
 	return &Rewriter{
-		config:    cfg,
-		startDate: startDate,
-		endDate:   endDate,
-		ghGraphql: ghGraphql,
+		rewriterCfg: cfg.Rewriter,
+		gitCfg:      cfg.GitInfo,
+		startDate:   startDate,
+		endDate:     endDate,
+		ghGraphql:   ghGraphql,
 	}
 }
 
@@ -69,6 +73,14 @@ func (r *Rewriter) Run() error {
 		return fmt.Errorf("draw foreground failed: %w", err)
 	}
 	logrus.Infof("draw foreground success")
+
+	if !r.rewriterCfg.DryRun {
+		err = repo.ForcePush(r.repo, r.gitCfg.GhToken)
+		if err != nil {
+			return fmt.Errorf("force push failed: %w", err)
+		}
+		logrus.Info("force push success")
+	}
 
 	return nil
 }
@@ -112,7 +124,7 @@ func (r *Rewriter) sanityCheck() error {
 
 func (r *Rewriter) prepare() (err error) {
 	logrus.Info("preparing...")
-	r.repo, err = repo.CloneRepo(r.config.RepoUrl, r.config.GhToken)
+	r.repo, err = repo.CloneRepo(r.gitCfg.RepoUrl, r.gitCfg.GhToken)
 	if err != nil {
 		logrus.Fatalf("Clone repo failed: %v", err)
 	}
@@ -139,11 +151,6 @@ func (r *Rewriter) drawBackground() error {
 		return fmt.Errorf("commit to work tree failed: %w", err)
 	}
 
-	err = repo.ForcePush(r.repo, r.config.GhToken)
-	if err != nil {
-		return fmt.Errorf("force push failed: %w", err)
-	}
-	logrus.Info("force push success")
 	return nil
 }
 
@@ -189,7 +196,7 @@ func (r *Rewriter) createDailyCommits() ([]dailyCommit, error) {
 }
 
 func (r *Rewriter) createCommitByDay(cs graphql.CommitStats, globalCount *int) []dailyCommit {
-	commitsToCreate := r.config.BackgroundCommitsPerDay - cs.Commits
+	commitsToCreate := r.rewriterCfg.BackgroundCommitsPerDay - cs.Commits
 	if commitsToCreate <= 0 {
 		return nil
 	}
@@ -197,32 +204,36 @@ func (r *Rewriter) createCommitByDay(cs graphql.CommitStats, globalCount *int) [
 	var dailyCommits []dailyCommit
 	for i := 0; i < commitsToCreate; i++ {
 		*globalCount++
-		dailyCommits = append(dailyCommits, dailyCommit{
-			date:    cs.Date,
-			message: fmt.Sprintf("Arbitrary commit #%d", *globalCount),
-			commitOptions: &git.CommitOptions{
-				Author: &object.Signature{
-					Name:  r.config.Author,
-					Email: r.config.Email,
-					When:  cs.Date,
-				},
-				Committer: &object.Signature{
-					Name:  r.config.Author,
-					Email: r.config.Email,
-					When:  cs.Date,
-				},
-				AllowEmptyCommits: true, // Create an empty commit
-			},
-		})
+		dailyCommits = append(dailyCommits, r.createCommit(cs.Date, fmt.Sprintf("Arbitrary commit #%d", *globalCount)))
 	}
 
 	return dailyCommits
 }
 
-// getSunday returns Sunday of the given week.
-// weekOffset is the number of weeks in the past year.
-func getSunday(now time.Time, weekOffset int) (time.Time, error) {
-	latestSunday := latestSunday(&now)
+func (r *Rewriter) createCommit(date time.Time, commitMsg string) dailyCommit {
+	return dailyCommit{
+		date:    date,
+		message: commitMsg,
+		commitOptions: &git.CommitOptions{
+			Author: &object.Signature{
+				Name:  r.gitCfg.Author,
+				Email: r.gitCfg.Email,
+				When:  date,
+			},
+			Committer: &object.Signature{
+				Name:  r.gitCfg.Author,
+				Email: r.gitCfg.Email,
+				When:  date,
+			},
+			AllowEmptyCommits: true, // Create an empty commit
+		},
+	}
+}
+
+// getStartSunday returns Sunday of the week (52 - offset) weeks ago.
+// weekOffset is the number of weeks to offset from the target date.
+func getStartSunday(now time.Time, weekOffset int) (time.Time, error) {
+	latestSunday := getLatestSunday(now)
 
 	// Calculate the start date 52 weeks ago
 	targetSunday := latestSunday.AddDate(0, 0, (-52+weekOffset)*7)
@@ -236,11 +247,6 @@ func getSunday(now time.Time, weekOffset int) (time.Time, error) {
 	return targetSunday, nil
 }
 
-func latestSunday(date *time.Time) time.Time {
-	// check if nil
-	if date == nil {
-		now := time.Now()
-		date = &now
-	}
-	return date.Truncate(24 * time.Hour).Add(-time.Duration(date.Weekday()) * 24 * time.Hour)
+func getLatestSunday(d time.Time) time.Time {
+	return d.Truncate(24 * time.Hour).Add(-time.Duration(d.Weekday()) * 24 * time.Hour)
 }

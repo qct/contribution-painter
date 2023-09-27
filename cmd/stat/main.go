@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var config configs.Config
+var config configs.Configuration
 
 func main() {
 	logger.InitLogger()

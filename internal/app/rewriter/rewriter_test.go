@@ -38,13 +38,13 @@ func Test_getSunday(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getSunday(tt.now, tt.weekOffset)
+			got, err := getStartSunday(tt.now, tt.weekOffset)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("getSunday() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("getStartSunday() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getSunday() got = %v, want %v", got, tt.want)
+				t.Errorf("getStartSunday() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -53,54 +53,39 @@ func Test_getSunday(t *testing.T) {
 func Test_latestSunday(t *testing.T) {
 	tests := []struct {
 		name string
-		date *time.Time
+		date time.Time
 		want time.Time
 	}{
 		{
-			name: "latestSunday should return the latest Sunday",
-			date: func() *time.Time {
-				date := time.Date(2023, 7, 2, 0, 0, 0, 0, time.UTC)
-				return &date
-			}(),
+			name: "getLatestSunday should return the latest Sunday",
+			date: time.Date(2023, 7, 2, 0, 0, 0, 0, time.UTC),
 			want: time.Date(2023, 7, 2, 0, 0, 0, 0, time.UTC),
 		},
 		{
-			name: "latestSunday should return the latest Sunday",
-			date: func() *time.Time {
-				date := time.Date(2023, 7, 3, 0, 0, 0, 0, time.UTC)
-				return &date
-			}(),
+			name: "getLatestSunday should return the latest Sunday",
+			date: time.Date(2023, 7, 3, 0, 0, 0, 0, time.UTC),
 			want: time.Date(2023, 7, 2, 0, 0, 0, 0, time.UTC),
 		},
 		{
-			name: "latestSunday should return the latest Sunday",
-			date: func() *time.Time {
-				date := time.Date(2023, 7, 8, 0, 0, 0, 0, time.UTC)
-				return &date
-			}(),
+			name: "getLatestSunday should return the latest Sunday",
+			date: time.Date(2023, 7, 8, 0, 0, 0, 0, time.UTC),
 			want: time.Date(2023, 7, 2, 0, 0, 0, 0, time.UTC),
 		},
 		{
-			name: "latestSunday should return the latest Sunday",
-			date: func() *time.Time {
-				date := time.Date(2023, 7, 9, 0, 0, 0, 0, time.UTC)
-				return &date
-			}(),
+			name: "getLatestSunday should return the latest Sunday",
+			date: time.Date(2023, 7, 9, 0, 0, 0, 0, time.UTC),
 			want: time.Date(2023, 7, 9, 0, 0, 0, 0, time.UTC),
 		},
 		{
-			name: "latestSunday should return the latest Sunday",
-			date: func() *time.Time {
-				date := time.Date(2023, 7, 15, 0, 0, 0, 0, time.UTC)
-				return &date
-			}(),
+			name: "getLatestSunday should return the latest Sunday",
+			date: time.Date(2023, 7, 15, 0, 0, 0, 0, time.UTC),
 			want: time.Date(2023, 7, 9, 0, 0, 0, 0, time.UTC),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := latestSunday(tt.date); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("latestSunday() = %v, want %v", got, tt.want)
+			if got := getLatestSunday(tt.date); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getLatestSunday() = %v, want %v", got, tt.want)
 			}
 		})
 	}

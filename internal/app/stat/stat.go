@@ -12,8 +12,8 @@ type Stat struct {
 	ghGraphql *graphql.GhGraphql
 }
 
-func NewStat(c *configs.Config) *Stat {
-	return &Stat{ghGraphql: graphql.NewGhGraphql(c)}
+func NewStat(c *configs.Configuration) *Stat {
+	return &Stat{ghGraphql: graphql.NewGhGraphql(c.GitInfo)}
 }
 
 func (s *Stat) Run() error {

@@ -1,13 +1,17 @@
-repo_url: https://github.com/your-repo.git
-gh_token: your_github_token
-author: author
-email: author_mail
+git_info:
+  repo_url: https://github.com/your-repo.git
+  gh_token: your_github_token
+  author: author
+  email: author_mail
 
-background_commits_per_day: 3
-foreground_commits_per_day: 5
-week_offset: 0
-target_letters: "L"
+rewriter:
+  dry_run: true
+  background_commits_per_day: 3
+  foreground_commits_per_day: 5
+  week_offset: 0
+  target_letters: "HELLO"
 
+# deprecated
 squash:
   target_branch: "master"
   start_commit: "4f41c951"

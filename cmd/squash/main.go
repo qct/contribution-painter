@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var config configs.Config
+var config configs.Configuration
 
 // Deprecated: This is a deprecated function.
 func main() {

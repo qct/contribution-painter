@@ -14,7 +14,7 @@ type GhGraphql struct {
 	C    *GraphClient
 }
 
-func NewGhGraphql(config *configs.Config) *GhGraphql {
+func NewGhGraphql(config configs.GitInfo) *GhGraphql {
 	return &GhGraphql{
 		User: config.Author,
 		C:    NewClient(helper.GitHubGraphQLEndpoint, config.GhToken, 10*time.Second),
