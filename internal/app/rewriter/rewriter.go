@@ -6,6 +6,7 @@ import (
 	"rewriting-history/internal/pkg/graphql"
 	"rewriting-history/internal/pkg/helper"
 	"rewriting-history/internal/pkg/repo"
+	"rewriting-history/internal/pkg/stat"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -25,6 +26,7 @@ type Rewriter struct {
 	startDate time.Time
 	endDate   time.Time
 
+	stats     *stat.ContributionStats
 	ghGraphql *graphql.GhGraphql
 }
 
@@ -44,6 +46,7 @@ func NewRewriter(cfg configs.Configuration) *Rewriter {
 		startDate:   startDate,
 		endDate:     endDate,
 		ghGraphql:   ghGraphql,
+		stats:       stat.NewContributionStats(ghGraphql),
 	}
 }
 

@@ -1,4 +1,4 @@
-package rewriter
+package stat
 
 import (
 	"encoding/json"
@@ -8,37 +8,28 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRewriter_printCommitStat(t *testing.T) {
+func TestContributionStats_PrintCommitStat(t *testing.T) {
 	resp := &graphql.ContributionsCollectionResp{}
 	err := jsonModelFromFilePath("mocks/contributions_collection_resp.json", resp)
 	assert.NoError(t, err)
 
-	groupByColor := make(map[string][]graphql.ContributionDay)
+	groupByColor := make(map[string]contributionDays)
 	for _, week := range resp.Data.User.ContributionsCollection.ContributionCalendar.Weeks {
 		for _, day := range week.ContributionDays {
 			groupByColor[day.Color] = append(groupByColor[day.Color], day)
 		}
 	}
 
-	var stats contributionStats
-	for color, days := range groupByColor {
-		stats = append(stats, contributionStat{color: color, contributionDays: days})
-	}
+	sortedStats := contributionStats(convertToContributionStats(groupByColor))
+	sort.Sort(sort.Reverse(sortedStats))
 
-	// Sort the stats
-	sort.Sort(stats)
-	for _, stat := range stats {
-		// min, max, mean, median
-		min := contributionDays(stat.contributionDays).min()
-		max := contributionDays(stat.contributionDays).max()
-		mean := contributionDays(stat.contributionDays).mean()
-		median := contributionDays(stat.contributionDays).median()
-
-		// Print the stats
-		t.Logf(printFormat, colorToHuman[stat.color], stat.color, len(stat.contributionDays), min, max, mean, median)
+	logrus.Info("color 1 --> 4, light to dark")
+	for _, s := range sortedStats {
+		logrus.Infof(printFormat, s.HumanReadableColor, s.Color, s.TotalCommits, s.Min, s.Max, s.Mean, s.Median)
 	}
 }
 
@@ -48,7 +39,9 @@ func jsonModelFromFilePath(file string, result interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer jsonFile.Close()
+	defer func(jsonFile *os.File) {
+		_ = jsonFile.Close()
+	}(jsonFile)
 
 	// Read the file
 	byteValue, err := io.ReadAll(jsonFile)
