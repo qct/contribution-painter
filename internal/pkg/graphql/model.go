@@ -1,14 +1,5 @@
 package graphql
 
-import (
-	"time"
-)
-
-type CommitStats struct {
-	Date    time.Time
-	Commits int
-}
-
 type graphqlRequest struct {
 	Query string `json:"query"`
 }

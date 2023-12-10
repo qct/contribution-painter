@@ -3,6 +3,8 @@ package rewriter
 import (
 	"fmt"
 	"rewriting-history/configs"
+	"rewriting-history/internal/domain"
+	"rewriting-history/internal/pkg/dict"
 	"rewriting-history/internal/pkg/graphql"
 	"rewriting-history/internal/pkg/helper"
 	"rewriting-history/internal/pkg/repo"
@@ -14,56 +16,63 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	minWidth = 3
-)
-
 type Rewriter struct {
 	rewriterCfg configs.Rewriter
 	gitCfg      configs.GitInfo
 
-	repo      *git.Repository
-	startDate time.Time
-	endDate   time.Time
+	repo         *git.Repository
+	startDate    time.Time
+	endDate      time.Time
+	currentState []stat.CommitStat
 
-	stats     *stat.ContributionStats
-	ghGraphql *graphql.GhGraphql
+	stats *stat.ContributionStats
+	dict  domain.Dictionary
 }
 
 func NewRewriter(cfg configs.Configuration) *Rewriter {
 	ghGraphql := graphql.NewGhGraphql(cfg.GitInfo)
 
-	startDate, err := getStartSunday(time.Now(), cfg.Rewriter.WeekOffset)
+	startDate, err := getStartSunday(time.Now(), cfg.Rewriter.LeadingColumns)
 	if err != nil {
 		logrus.Fatalf("Get first Saturday failed: %v", err)
 	}
-	endDate := getLatestSunday(time.Now()).Add(-24 * time.Hour)
-	logrus.Infof("painting date range: %s --- %s", startDate.Format(helper.DateFormat), endDate.Format(helper.DateFormat))
 
 	return &Rewriter{
 		rewriterCfg: cfg.Rewriter,
 		gitCfg:      cfg.GitInfo,
 		startDate:   startDate,
-		endDate:     endDate,
-		ghGraphql:   ghGraphql,
 		stats:       stat.NewContributionStats(ghGraphql),
+		dict:        dict.NewDictionary(domain.Font(cfg.Rewriter.Font)),
 	}
 }
 
-func (r *Rewriter) Run() error {
-	err := r.sanityCheck()
+func (r *Rewriter) getEndDate() time.Time {
+	c := r.rewriterCfg
+	letters, err := r.dict.GetLetters(c.TargetLetters, c.LetterSpacing, c.LeadingColumns, c.TrailingColumns)
 	if err != nil {
-		return fmt.Errorf("sanity check failed: %w", err)
+		logrus.Fatalf("Get letters failed: %v", err)
+	}
+
+	width := 0
+	for _, letter := range letters {
+		width += len(letter[0])
+	}
+
+	endDate := r.startDate.Add(time.Duration(width) * 24 * 7 * time.Hour)
+	logrus.Infof("letter width: %d, end date: %s", width, endDate.Format(helper.DateFormat))
+
+	return endDate
+}
+
+func (r *Rewriter) Run() error {
+	err := r.prepare()
+	if err != nil {
+		return fmt.Errorf("prepare repo failed: %w", err)
 	}
 
 	err = r.printCommitStat()
 	if err != nil {
 		return fmt.Errorf("print commit stat failed: %w", err)
-	}
-
-	err = r.prepare()
-	if err != nil {
-		return fmt.Errorf("prepare repo failed: %w", err)
 	}
 
 	err = r.drawBackground()
@@ -87,29 +96,6 @@ func (r *Rewriter) Run() error {
 	return nil
 }
 
-func (r *Rewriter) sanityCheck() error {
-	logrus.Info("sanity checking...")
-	//weeks between start and end date
-	weeks := int(r.endDate.Sub(r.startDate).Hours()/24/7) + 1
-	if weeks < minWidth {
-		return fmt.Errorf("weeks between start and end date is less than %d", minWidth)
-	}
-
-	//commitsByDay, err := r.ghGraphql.CommitsByDay()
-	//if err != nil {
-	//	return fmt.Errorf("get commits by day failed: %w", err)
-	//}
-	//maxDailyCommit, err := graphql.MaxCommits(r.startDate, r.endDate, commitsByDay)
-	//if err != nil {
-	//	return fmt.Errorf("get max daily commit failed: %w", err)
-	//}
-	//if maxDailyCommit.Commits > r.config.BackgroundCommitsPerDay {
-	//	return fmt.Errorf("max daily commit %d is greater than %d", maxDailyCommit.Commits, r.config.BackgroundCommitsPerDay)
-	//}
-
-	return nil
-}
-
 func (r *Rewriter) prepare() (err error) {
 	logrus.Info("preparing...")
 	r.repo, err = repo.CloneRepo(r.gitCfg.RepoUrl, r.gitCfg.GhToken)
@@ -117,15 +103,31 @@ func (r *Rewriter) prepare() (err error) {
 		logrus.Fatalf("Clone repo failed: %v", err)
 	}
 
+	currentState, err := r.stats.CommitsByDay()
+	if err != nil {
+		return fmt.Errorf("get contribution collection failed: %w", err)
+	}
+	r.currentState = currentState
+
+	r.endDate = r.getEndDate()
+	logrus.Infof("painting date range: %s --- %s", r.startDate.Format(helper.DateFormat), r.endDate.Format(helper.DateFormat))
+
+	//weeks between start and end date
+	now := time.Now()
+	latestSunday := getLatestSunday(now)
+	if now.Weekday() != time.Saturday {
+		latestSunday = latestSunday.AddDate(0, 0, -7)
+	}
+	if r.endDate.After(latestSunday) {
+		return fmt.Errorf("end date is after now, end date: %s, latestSunday: %s",
+			r.endDate.Format(helper.DateFormat), latestSunday.Format(helper.DateFormat))
+	}
+
 	return nil
 }
 
 func (r *Rewriter) drawBackground() error {
 	logrus.Info("drawing background...")
-	//commits, err := repo.GetCommits(r.repo, nil)
-	//if err != nil {
-	//	return fmt.Errorf("get commits failed: %w", err)
-	//}
 
 	// Compute the number of commits by days between the start date and today
 	dailyCommits, err := r.createDailyCommits()
@@ -166,15 +168,23 @@ func (r *Rewriter) commitToWorkTree(dailyCommits []dailyCommit) error {
 }
 
 func (r *Rewriter) createDailyCommits() ([]dailyCommit, error) {
-	commitStats, err := r.ghGraphql.CommitsByDay()
+	commitStats, err := r.stats.CommitsByDay()
 	if err != nil {
 		return nil, fmt.Errorf("get commits by day failed: %w", err)
+	}
+
+	var commitStatsInDateRange []stat.CommitStat
+	for _, cs := range commitStats {
+		if cs.Date.Before(r.startDate) || cs.Date.After(r.endDate) {
+			continue
+		}
+		commitStatsInDateRange = append(commitStatsInDateRange, cs)
 	}
 
 	msgCount := 0
 
 	var dailyCommits []dailyCommit
-	for _, cs := range commitStats {
+	for _, cs := range commitStatsInDateRange {
 		dc := r.createCommitByDay(cs, &msgCount)
 		dailyCommits = append(dailyCommits, dc...)
 	}
@@ -183,7 +193,7 @@ func (r *Rewriter) createDailyCommits() ([]dailyCommit, error) {
 	return dailyCommits, nil
 }
 
-func (r *Rewriter) createCommitByDay(cs graphql.CommitStats, globalCount *int) []dailyCommit {
+func (r *Rewriter) createCommitByDay(cs stat.CommitStat, globalCount *int) []dailyCommit {
 	commitsToCreate := r.rewriterCfg.BackgroundCommitsPerDay - cs.Commits
 	if commitsToCreate <= 0 {
 		return nil

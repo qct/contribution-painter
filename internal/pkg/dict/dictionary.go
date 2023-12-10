@@ -18,7 +18,7 @@ func NewDictionary(font domain.Font) *Dictionary {
 	return &Dictionary{font: font}
 }
 
-func (d *Dictionary) GetLetter(target string, letterSpacing, leadingSpace, trailingSpace int) ([]domain.Letter, error) {
+func (d *Dictionary) GetLetters(target string, letterSpacing, leadingSpace, trailingSpace int) ([]domain.Letter, error) {
 	var letters []domain.Letter
 
 	var fontMap map[rune]domain.Letter

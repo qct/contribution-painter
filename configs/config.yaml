@@ -6,7 +6,10 @@ git_info:
 
 rewriter:
   dry_run: true
-  background_commits_per_day: 3
-  foreground_commits_per_day: 5
-  week_offset: 0
   target_letters: "HELLO"
+  background_commits_per_day: 7
+  foreground_commits_per_day: 16
+  leading_columns: 8
+  trailing_columns: 0
+  letter_spacing: 2
+  font: "75"

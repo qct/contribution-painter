@@ -1,22 +1,31 @@
 package stat
 
-import "rewriting-history/internal/pkg/graphql"
+import (
+	"rewriting-history/internal/pkg/graphql"
+	"time"
+)
 
 var colorToHumanReadable = map[string]string{
 	"#216e39": "4",
 	"#30a14e": "3",
 	"#40c463": "2",
 	"#9be9a8": "1",
+	"#ebedf0": "0",
 }
 
 type ContributionStat struct {
 	Color              string
 	HumanReadableColor string
-	TotalCommits       int
+	TotalDays          int
 	Min                int
 	Max                int
 	Mean               int
 	Median             int
+}
+
+type CommitStat struct {
+	Date    time.Time
+	Commits int
 }
 
 type contributionDays []graphql.ContributionDay
@@ -60,7 +69,7 @@ func (c contributionStats) Len() int {
 }
 
 func (c contributionStats) Less(i, j int) bool {
-	return c[i].TotalCommits < c[j].TotalCommits
+	return c[i].TotalDays < c[j].TotalDays
 }
 
 func (c contributionStats) Swap(i, j int) {

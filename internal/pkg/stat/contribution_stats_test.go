@@ -3,10 +3,13 @@ package stat
 import (
 	"encoding/json"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"rewriting-history/internal/pkg/graphql"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -27,9 +30,82 @@ func TestContributionStats_PrintCommitStat(t *testing.T) {
 	sortedStats := contributionStats(convertToContributionStats(groupByColor))
 	sort.Sort(sort.Reverse(sortedStats))
 
-	logrus.Info("color 1 --> 4, light to dark")
+	logrus.Info("color 0 --> 4, light to dark")
 	for _, s := range sortedStats {
-		logrus.Infof(printFormat, s.HumanReadableColor, s.Color, s.TotalCommits, s.Min, s.Max, s.Mean, s.Median)
+		logrus.Infof(printFormat, s.HumanReadableColor, s.Color, s.TotalDays, s.Min, s.Max, s.Mean, s.Median)
+	}
+}
+
+func TestCommitsByDay(t *testing.T) {
+	tests := []struct {
+		name    string
+		handler http.HandlerFunc
+		want    []CommitStat
+		wantErr error
+	}{
+		{
+			name: "should succeed",
+			handler: func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(http.StatusOK)
+				_, _ = writer.Write([]byte(`{
+					"data": {
+						"user": {
+							"contributionsCollection": {
+								"contributionCalendar": {
+									"totalContributions": 65,
+									"weeks": [
+										{
+											"contributionDays": [
+												{
+													"date": "2023-06-18",
+													"contributionCount": 55,
+													"color": "#c6e48b"
+												},
+												{
+													"date": "2023-06-19",
+													"contributionCount": 10,
+													"color": "#c6e48b"
+												}
+											]
+										}
+									]
+								}
+							}
+						}
+					}
+				}`))
+			},
+			want: []CommitStat{
+				{Date: time.Date(2023, 6, 18, 0, 0, 0, 0, time.UTC), Commits: 55},
+				{Date: time.Date(2023, 6, 19, 0, 0, 0, 0, time.UTC), Commits: 10},
+			},
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockServer := httptest.NewServer(tt.handler)
+			defer mockServer.Close()
+
+			c := NewContributionStats(&graphql.GhGraphql{
+				C: &graphql.GraphClient{
+					Url:    mockServer.URL,
+					Client: &http.Client{},
+				},
+			})
+
+			commitStats, err := c.CommitsByDay()
+
+			if tt.wantErr != nil {
+				assert.Error(t, err)
+				assert.EqualError(t, err, tt.wantErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.ElementsMatchf(t, tt.want, commitStats, "CommitsByDay()")
+		})
 	}
 }
 

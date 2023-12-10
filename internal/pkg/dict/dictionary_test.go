@@ -51,7 +51,7 @@ func TestDictionary_GetLetter(t *testing.T) {
 			d := &Dictionary{
 				font: tt.args.font,
 			}
-			got, err := d.GetLetter(tt.args.target, tt.args.letterSpacing, tt.args.leadingSpace, tt.args.trailingSpace)
+			got, err := d.GetLetters(tt.args.target, tt.args.letterSpacing, tt.args.leadingSpace, tt.args.trailingSpace)
 
 			if tt.wantErr != nil {
 				assert.Error(t, err)
