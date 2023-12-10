@@ -6,4 +6,7 @@ type Dictionary interface {
 
 	// FontHeight returns the length of the font
 	FontHeight() int
+
+	// FontWidth returns the width of the font
+	FontWidth() int
 }

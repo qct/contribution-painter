@@ -33,3 +33,14 @@ func (f Font) Height() int {
 		return 1<<31 - 1
 	}
 }
+
+func (f Font) Width() int {
+	switch f {
+	case Font75:
+		return 5
+	case Font55:
+		return 5
+	default:
+		return 1<<31 - 1
+	}
+}

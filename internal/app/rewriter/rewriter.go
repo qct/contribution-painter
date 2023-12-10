@@ -9,6 +9,7 @@ import (
 	"rewriting-history/internal/pkg/helper"
 	"rewriting-history/internal/pkg/repo"
 	"rewriting-history/internal/pkg/stat"
+	"sort"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -75,7 +76,7 @@ func (r *Rewriter) Run() error {
 		return fmt.Errorf("print commit stat failed: %w", err)
 	}
 
-	err = r.drawBackground()
+	_, err = r.drawBackground()
 	if err != nil {
 		return fmt.Errorf("draw backgroud failed: %w", err)
 	}
@@ -126,11 +127,106 @@ func (r *Rewriter) prepare() (err error) {
 	return nil
 }
 
-func (r *Rewriter) drawBackground() error {
+func (r *Rewriter) drawBackground() ([]stat.CommitStat, error) {
 	logrus.Info("drawing background...")
 
 	// Compute the number of commits by days between the start date and today
-	dailyCommits, err := r.createDailyCommits()
+	commitStats, err := r.stats.CommitsByDay()
+	if err != nil {
+		return nil, fmt.Errorf("get commits by day failed: %w", err)
+	}
+
+	var commitStatsInDateRange []stat.CommitStat
+	for _, cs := range commitStats {
+		if cs.Date.Before(r.startDate) || cs.Date.After(r.endDate) {
+			continue
+		}
+
+		cs.Commits = r.rewriterCfg.BackgroundCommitsPerDay - cs.Commits
+		if cs.Commits < 0 {
+			logrus.Warnf("commits is less than 0, %s: %d", cs.Date.Format(helper.DateFormat), cs.Commits)
+		}
+
+		commitStatsInDateRange = append(commitStatsInDateRange, cs)
+	}
+
+	dailyCommits, err := r.createDailyCommits(commitStatsInDateRange)
+	if err != nil {
+		return nil, fmt.Errorf("create daily commits failed: %w", err)
+	}
+
+	// Commit to working tree
+	err = r.commitToWorkTree(dailyCommits)
+	if err != nil {
+		return nil, fmt.Errorf("commit to work tree failed: %w", err)
+	}
+
+	return commitStatsInDateRange, nil
+}
+
+func (r *Rewriter) drawForeground() error {
+	logrus.Info("drawing foreground...")
+	c := r.rewriterCfg
+	letters, err := r.dict.GetLetters(c.TargetLetters, c.LetterSpacing, c.LeadingColumns, c.TrailingColumns)
+	if err != nil {
+		logrus.Fatalf("Get letters failed: %v", err)
+	}
+
+	// group commits by date
+	commits, err := repo.GetCommits(r.repo, &git.LogOptions{})
+	if err != nil {
+		return fmt.Errorf("get commits failed: %w", err)
+	}
+	commitMap := make(map[time.Time]int)
+	for _, commit := range commits {
+		commitMap[commit.Author.When.Truncate(24*time.Hour)]++
+	}
+	existedCommitStats, err := r.stats.CommitsByDay()
+	if err != nil {
+		return fmt.Errorf("get existed commits failed: %w", err)
+	}
+	for _, cs := range existedCommitStats {
+		if _, ok := commitMap[cs.Date]; !ok {
+			commitMap[cs.Date] = cs.Commits
+		} else {
+			commitMap[cs.Date] += cs.Commits
+		}
+	}
+
+	var stats []stat.CommitStat
+	lettersWithoutLeadingAndTrailingColumns := letters[r.rewriterCfg.LeadingColumns : len(letters)-r.rewriterCfg.TrailingColumns]
+	dataCursor := r.startDate
+	for _, letter := range lettersWithoutLeadingAndTrailingColumns { // every letter
+		if len(letter[0]) != r.dict.FontWidth() {
+			dataCursor = dataCursor.AddDate(0, 0, 7)
+			continue
+		}
+
+		for i := 0; i < r.dict.FontWidth(); i++ { // every column, 0 - 5
+			weekStart, weekEnd := 0, 7
+			if len(letter) < 7 {
+				dataCursor = dataCursor.Add(24 * time.Hour)
+				weekStart = 1
+				weekEnd = 6
+			}
+
+			for j := weekStart; j < weekEnd; j++ { // every row, 0 - 6
+				if letter[j][i] == 1 {
+					stats = append(stats, stat.CommitStat{
+						Date:    dataCursor,
+						Commits: r.rewriterCfg.ForegroundCommitsPerDay - commitMap[dataCursor],
+					})
+				}
+				dataCursor = dataCursor.Add(24 * time.Hour)
+			}
+
+			if len(letter) < 7 {
+				dataCursor = dataCursor.Add(24 * time.Hour)
+			}
+		}
+	}
+
+	dailyCommits, err := r.createDailyCommits(stats)
 	if err != nil {
 		return fmt.Errorf("create daily commits failed: %w", err)
 	}
@@ -144,11 +240,6 @@ func (r *Rewriter) drawBackground() error {
 	return nil
 }
 
-func (r *Rewriter) drawForeground() error {
-	logrus.Info("drawing foreground...")
-	return nil
-}
-
 // commitToWorkTree commits dailyCommits to work tree
 func (r *Rewriter) commitToWorkTree(dailyCommits []dailyCommit) error {
 	worktree, err := r.repo.Worktree()
@@ -156,35 +247,40 @@ func (r *Rewriter) commitToWorkTree(dailyCommits []dailyCommit) error {
 		return fmt.Errorf("get work tree failed: %w", err)
 	}
 
+	infoToPrint := make(map[time.Time]int)
 	for _, dc := range dailyCommits {
-		commitHash, err := worktree.Commit(dc.message, dc.commitOptions)
+		_, err = worktree.Commit(dc.message, dc.commitOptions)
 		if err != nil {
 			return fmt.Errorf("commit failed: %w", err)
 		}
-		logrus.Infof("commit %s success at %s", commitHash.String()[:8], dc.date)
+
+		infoToPrint[dc.date.Truncate(24*time.Hour)]++
 	}
 
+	// Print commit info order by date asc
+	var dates []time.Time
+	for k := range infoToPrint {
+		dates = append(dates, k)
+	}
+	sort.Slice(dates, func(i, j int) bool {
+		return dates[i].Before(dates[j])
+	})
+
+	for _, date := range dates {
+		logrus.Infof("commit %d commits at %s", infoToPrint[date], date.Format(helper.DateFormat))
+	}
 	return nil
 }
 
-func (r *Rewriter) createDailyCommits() ([]dailyCommit, error) {
-	commitStats, err := r.stats.CommitsByDay()
-	if err != nil {
-		return nil, fmt.Errorf("get commits by day failed: %w", err)
-	}
-
-	var commitStatsInDateRange []stat.CommitStat
-	for _, cs := range commitStats {
-		if cs.Date.Before(r.startDate) || cs.Date.After(r.endDate) {
-			continue
-		}
-		commitStatsInDateRange = append(commitStatsInDateRange, cs)
-	}
-
+func (r *Rewriter) createDailyCommits(commitStatsInDateRange []stat.CommitStat) ([]dailyCommit, error) {
 	msgCount := 0
 
 	var dailyCommits []dailyCommit
 	for _, cs := range commitStatsInDateRange {
+		if cs.Commits <= 0 {
+			continue
+		}
+
 		dc := r.createCommitByDay(cs, &msgCount)
 		dailyCommits = append(dailyCommits, dc...)
 	}
@@ -194,13 +290,8 @@ func (r *Rewriter) createDailyCommits() ([]dailyCommit, error) {
 }
 
 func (r *Rewriter) createCommitByDay(cs stat.CommitStat, globalCount *int) []dailyCommit {
-	commitsToCreate := r.rewriterCfg.BackgroundCommitsPerDay - cs.Commits
-	if commitsToCreate <= 0 {
-		return nil
-	}
-
 	var dailyCommits []dailyCommit
-	for i := 0; i < commitsToCreate; i++ {
+	for i := 0; i < cs.Commits; i++ {
 		*globalCount++
 		dailyCommits = append(dailyCommits, r.createCommit(cs.Date, fmt.Sprintf("Arbitrary commit #%d", *globalCount)))
 	}

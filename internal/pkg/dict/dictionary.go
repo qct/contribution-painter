@@ -65,3 +65,7 @@ func (d *Dictionary) GetLetters(target string, letterSpacing, leadingSpace, trai
 func (d *Dictionary) FontHeight() int {
 	return d.font.Height()
 }
+
+func (d *Dictionary) FontWidth() int {
+	return d.font.Width()
+}

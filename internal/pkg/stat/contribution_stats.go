@@ -50,6 +50,7 @@ func (c *ContributionStats) GetContributionStats() ([]ContributionStat, error) {
 	for _, week := range resp.Data.User.ContributionsCollection.ContributionCalendar.Weeks {
 		for _, day := range week.ContributionDays {
 			groupByColor[day.Color] = append(groupByColor[day.Color], day)
+			logrus.Debugf("color: %s, date: %s, count: %d", day.Color, day.Date, day.ContributionCount)
 		}
 	}
 
