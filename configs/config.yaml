@@ -4,9 +4,12 @@ git_info:
   author: author
   email: author_mail
 
-rewriter:
-  dry_run: true
-  background_commits_per_day: 3
-  foreground_commits_per_day: 5
-  week_offset: 0
-  target_letters: "HELLO"
+background_commits_per_day: 3
+foreground_commits_per_day: 5
+start_week: 2
+target_letters: "L"
+
+squash:
+  target_branch: "master"
+  start_commit: "4f41c951"
+  end_commit: ""

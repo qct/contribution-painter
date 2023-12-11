@@ -2,27 +2,27 @@ package configs
 
 import "github.com/spf13/viper"
 
-type GitInfo struct {
+type Config struct {
 	RepoUrl string `mapstructure:"repo_url"`
 	GhToken string `mapstructure:"gh_token"`
 	Author  string `mapstructure:"author"`
 	Email   string `mapstructure:"email"`
-}
 
-type Rewriter struct {
-	DryRun                  bool   `mapstructure:"dry_run"`
 	BackgroundCommitsPerDay int    `mapstructure:"background_commits_per_day"`
 	ForegroundCommitsPerDay int    `mapstructure:"foreground_commits_per_day"`
-	WeekOffset              int    `mapstructure:"week_offset"`
+	StartWeek               int    `mapstructure:"start_week"`
 	TargetLetters           string `mapstructure:"target_letters"`
+
+	Squash SquashConfig `mapstructure:"squash"`
 }
 
-type Configuration struct {
-	GitInfo  GitInfo  `mapstructure:"git_info"`
-	Rewriter Rewriter `mapstructure:"rewriter"`
+type SquashConfig struct {
+	TargetBranch string `mapstructure:"target_branch"`
+	StartCommit  string `mapstructure:"start_commit"`
+	EndCommit    string `mapstructure:"end_commit"`
 }
 
-func LoadConfig(file string, cfg *Configuration) error {
+func LoadConfig(file string, cfg *Config) error {
 	if file != "" {
 		viper.SetConfigFile(file)
 	} else {
