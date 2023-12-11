@@ -63,7 +63,7 @@ func (s *Simulator) Simulate(target string, letterSpacing, leadingSpace, trailin
 		return errors.New("target is empty")
 	}
 
-	letters, err := s.dict.GetLetter(target, letterSpacing, leadingSpace, trailingSpace)
+	letters, err := s.dict.GetLetters(target, letterSpacing, leadingSpace, trailingSpace)
 	if err != nil {
 		return fmt.Errorf("failed to get letters: %w", err)
 	}

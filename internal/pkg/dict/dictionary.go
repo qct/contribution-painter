@@ -18,7 +18,7 @@ func NewDictionary(font domain.Font) *Dictionary {
 	return &Dictionary{font: font}
 }
 
-func (d *Dictionary) GetLetter(target string, letterSpacing, leadingSpace, trailingSpace int) ([]domain.Letter, error) {
+func (d *Dictionary) GetLetters(target string, letterSpacing, leadingSpace, trailingSpace int) ([]domain.Letter, error) {
 	var letters []domain.Letter
 
 	var fontMap map[rune]domain.Letter
@@ -64,4 +64,8 @@ func (d *Dictionary) GetLetter(target string, letterSpacing, leadingSpace, trail
 
 func (d *Dictionary) FontHeight() int {
 	return d.font.Height()
+}
+
+func (d *Dictionary) FontWidth() int {
+	return d.font.Width()
 }
