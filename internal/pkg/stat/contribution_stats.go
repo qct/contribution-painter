@@ -98,9 +98,21 @@ func (c *ContributionStats) GetSuggestedConfig(stats ...ContributionStat) (confi
 	}
 	sort.Sort(sort.Reverse(statsArray))
 
+	var bgMedian, fgMedian int
+	if len(statsArray) >= 2 {
+		bgMedian = statsArray[0].Median
+		fgMedian = statsArray[1].Median
+	} else if len(statsArray) == 1 {
+		bgMedian = statsArray[0].Median
+		fgMedian = statsArray[0].Max + 1
+	} else {
+		bgMedian = 0
+		fgMedian = 1
+	}
+
 	return configs.Rewriter{
-		BackgroundCommitsPerDay: statsArray[0].Median,
-		ForegroundCommitsPerDay: statsArray[1].Median,
+		BackgroundCommitsPerDay: bgMedian,
+		ForegroundCommitsPerDay: fgMedian,
 	}, nil
 }
 
