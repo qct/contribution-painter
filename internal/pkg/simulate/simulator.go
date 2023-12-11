@@ -1,10 +1,10 @@
 package simulate
 
 import (
+	"contribution-painter/internal/domain"
+	"contribution-painter/internal/pkg/dict"
 	"errors"
 	"fmt"
-	"rewriting-history/internal/domain"
-	"rewriting-history/internal/pkg/dict"
 
 	"github.com/sirupsen/logrus"
 )

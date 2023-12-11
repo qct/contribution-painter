@@ -1,7 +1,7 @@
 package stat
 
 import (
-	"rewriting-history/internal/pkg/graphql"
+	"contribution-painter/internal/pkg/graphql"
 	"time"
 )
 

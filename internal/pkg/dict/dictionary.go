@@ -1,8 +1,8 @@
 package dict
 
 import (
+	"contribution-painter/internal/domain"
 	"fmt"
-	"rewriting-history/internal/domain"
 )
 
 var (

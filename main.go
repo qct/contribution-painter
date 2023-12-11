@@ -16,7 +16,7 @@ limitations under the License.
 
 package main
 
-import "rewriting-history/cmd"
+import "contribution-painter/cmd"
 
 func main() {
 	cmd.Execute()

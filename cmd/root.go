@@ -17,11 +17,11 @@ limitations under the License.
 package cmd
 
 import (
+	"contribution-painter/configs"
+	"contribution-painter/internal/app/rewriter"
+	"contribution-painter/internal/pkg/logger"
 	"fmt"
 	"os"
-	"rewriting-history/configs"
-	"rewriting-history/internal/app/rewriter"
-	"rewriting-history/internal/pkg/logger"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -35,7 +35,7 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "rewriting-history",
+	Use:   "contribution-painter",
 	Short: "history-rewriter creates interesting bit graphs for your github profile",
 	Long: `history-rewriter is a tool to create interesting bit graphs 
 for your github profile by rewriting one of your repos' history.`,

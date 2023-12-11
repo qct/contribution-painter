@@ -1,7 +1,7 @@
 package dict
 
 import (
-	"rewriting-history/internal/domain"
+	"contribution-painter/internal/domain"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

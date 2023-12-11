@@ -1,12 +1,12 @@
 package stat
 
 import (
+	"contribution-painter/internal/pkg/graphql"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"rewriting-history/internal/pkg/graphql"
 	"sort"
 	"testing"
 	"time"

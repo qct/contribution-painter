@@ -1,14 +1,14 @@
 package rewriter
 
 import (
+	"contribution-painter/configs"
+	"contribution-painter/internal/domain"
+	"contribution-painter/internal/pkg/dict"
+	"contribution-painter/internal/pkg/graphql"
+	"contribution-painter/internal/pkg/helper"
+	"contribution-painter/internal/pkg/repo"
+	"contribution-painter/internal/pkg/stat"
 	"fmt"
-	"rewriting-history/configs"
-	"rewriting-history/internal/domain"
-	"rewriting-history/internal/pkg/dict"
-	"rewriting-history/internal/pkg/graphql"
-	"rewriting-history/internal/pkg/helper"
-	"rewriting-history/internal/pkg/repo"
-	"rewriting-history/internal/pkg/stat"
 	"sort"
 	"time"
 

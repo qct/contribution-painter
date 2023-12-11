@@ -1,9 +1,9 @@
 package graphql
 
 import (
+	"contribution-painter/configs"
+	"contribution-painter/internal/pkg/helper"
 	"fmt"
-	"rewriting-history/configs"
-	"rewriting-history/internal/pkg/helper"
 	"time"
 )
 

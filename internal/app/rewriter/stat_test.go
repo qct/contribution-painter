@@ -1,10 +1,10 @@
 package rewriter
 
 import (
+	"contribution-painter/internal/pkg/graphql"
 	"encoding/json"
 	"io"
 	"os"
-	"rewriting-history/internal/pkg/graphql"
 	"sort"
 	"testing"
 

@@ -1,11 +1,11 @@
 package graphql
 
 import (
+	"contribution-painter/internal/pkg/helper"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"rewriting-history/internal/pkg/helper"
 	"strings"
 	"time"
 

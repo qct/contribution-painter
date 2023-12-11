@@ -1,4 +1,4 @@
-module rewriting-history
+module contribution-painter
 
 go 1.20
 

@@ -1,6 +1,6 @@
 package dict
 
-import "rewriting-history/internal/domain"
+import "contribution-painter/internal/domain"
 
 // letters of an 5*5 2D array of uint
 var (

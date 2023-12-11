@@ -5,10 +5,10 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"contribution-painter/internal/pkg/graphql"
+	"contribution-painter/internal/pkg/stat"
 	"fmt"
 	"os"
-	"rewriting-history/internal/pkg/graphql"
-	"rewriting-history/internal/pkg/stat"
 
 	"github.com/spf13/cobra"
 )

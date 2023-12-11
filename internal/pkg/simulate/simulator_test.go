@@ -1,9 +1,9 @@
 package simulate
 
 import (
+	"contribution-painter/internal/domain"
+	"contribution-painter/internal/pkg/dict"
 	"errors"
-	"rewriting-history/internal/domain"
-	"rewriting-history/internal/pkg/dict"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

@@ -1,10 +1,10 @@
 package stat
 
 import (
+	"contribution-painter/configs"
+	"contribution-painter/internal/pkg/graphql"
+	"contribution-painter/internal/pkg/helper"
 	"fmt"
-	"rewriting-history/configs"
-	"rewriting-history/internal/pkg/graphql"
-	"rewriting-history/internal/pkg/helper"
 	"sort"
 	"time"
 
