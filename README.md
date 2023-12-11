@@ -1,4 +1,5 @@
 # Contribution painter
+[<a href="http://www.wtfpl.net/"><img src="http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-4.png" width="80" height="15" alt="WTFPL" /></a>](LICENSE)
 
 Contribution painter is a tool to paint your GitHub contribution graph which is funny but useless(unlike your daily work, which is not funny and useless). :)
 
@@ -28,6 +29,6 @@ Contribution painter is a tool to paint your GitHub contribution graph which is 
 - Paint `HELLO` in an account with barely no commits
 ![HELLO](img/hello2.png)
 
-- Paint `HELLO` in an account with some commits
+- Paint `HELLO` in an account with some commits, the graph below is exactly painted by this tool in this repo itself. See my [GitHub profile](https://github.com/qct)
 ![HELLO](img/hello1.png)
 
